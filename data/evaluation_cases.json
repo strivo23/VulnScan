@@ -1,0 +1,9 @@
+[
+ {"case_id":"vuln-missing-csp","expected_finding":true,"rule_id":"HDR-CSP","expected_severity":"MEDIUM"},
+ {"case_id":"vuln-missing-nosniff","expected_finding":true,"rule_id":"HDR-NOSNIFF","expected_severity":"LOW"},
+ {"case_id":"vuln-session-cookie-secure","expected_finding":true,"rule_id":"COOKIE-SECURE-lab_session","expected_severity":"MEDIUM"},
+ {"case_id":"vuln-directory-index","expected_finding":true,"rule_id":"DIR-LIST","expected_severity":"MEDIUM"},
+ {"case_id":"vuln-http-transport","expected_finding":true,"rule_id":"HTTP-HTTPS","expected_severity":"MEDIUM"},
+ {"case_id":"secure-csp-present","expected_finding":false,"rule_id":"HDR-CSP","expected_severity":"MEDIUM"},
+ {"case_id":"secure-nosniff-present","expected_finding":false,"rule_id":"HDR-NOSNIFF","expected_severity":"LOW"}
+]
