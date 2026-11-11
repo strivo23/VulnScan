@@ -55,3 +55,19 @@
 }
 td.actions-cell { display:table-cell; white-space:nowrap; }
 td.actions-cell .button { margin-right:6px; }
+/* Consistent pointer feedback. Kept after legacy rules so the first nav item cannot mask hover. */
+@media (hover:hover) and (pointer:fine) {
+  .sidebar nav a:hover:not(.active) { background:#243b5d; color:#fff; transform:translateX(2px); }
+  .sidebar nav a.active:hover { background:#29466d; color:#fff; }
+  .sidebar .brand:hover { color:#fff; }
+  .button:hover:not(:disabled) { background:#223754; border-color:#7da5f8; color:#fff; box-shadow:0 5px 14px rgba(0,0,0,.22); transform:translateY(-1px); }
+  .button.primary:hover:not(:disabled) { background:#6997ff; border-color:#8cb1ff; color:#fff; }
+  .button.danger-quiet:hover:not(:disabled) { background:#4a2632; border-color:#d16d80; color:#ffd5dc; }
+  .main a:not(.button):hover { color:#c0d6ff; text-decoration:underline; text-underline-offset:3px; }
+  .table-wrap tbody tr:hover { background:#17263c; }
+}
+.button,.sidebar nav a,.main a:not(.button),.table-wrap tbody tr { transition:color .16s ease,background-color .16s ease,border-color .16s ease,box-shadow .16s ease,transform .16s ease; }
+@media(prefers-reduced-motion:reduce) {
+  .button,.sidebar nav a,.main a:not(.button),.table-wrap tbody tr { transition:none; }
+  .sidebar nav a:hover:not(.active),.button:hover:not(:disabled) { transform:none; }
+}
