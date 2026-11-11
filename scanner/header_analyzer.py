@@ -11,8 +11,10 @@ def analyze_headers(headers, url):
     for name,(rule,sev,rem) in POLICIES.items():
         value=lower.get(name.lower())
         weak=False
-        if name=="Content-Security-Policy" and value: weak="unsafe-eval" in value.lower() or ("default-src" not in value.lower() and "script-src" not in value.lower())
-        if name=="Strict-Transport-Security" and value: weak="max-age=" not in value.lower()
+        if name=="Content-Security-Policy" and value: weak="unsafe-eval" in value.lower() or "unsafe-inline" in value.lower() or ("default-src" not in value.lower() and "script-src" not in value.lower())
+        if name=="Strict-Transport-Security" and value:
+            import re
+            match=re.search(r"max-age\s*=\s*(\d+)",value,re.I); weak=not match or int(match.group(1))==0
         if name=="X-Content-Type-Options" and value: weak=value.strip().lower()!="nosniff"
         if name=="X-Frame-Options" and value: weak=value.strip().lower() not in ("deny","sameorigin") and "frame-ancestors" not in lower.get("content-security-policy","").lower()
         if not value or weak:

@@ -94,7 +94,7 @@ The checks use only safe GET and HEAD requests. They do not attempt exploitation
 
 ## Reports and filters
 
-Reports are available per Scan ID from Reports and Scan Details pages. CSV contains one row per finding. HTML reports include target, scan timing, severity counts, evidence, impact, remediation, and scope limitations. Severity and category query filters are supported on report downloads; the findings view supports the same filters. Scan ID is selected by the report row. The database API also exposes date-oriented filtering extensions for integrations; date filters are not currently exposed in the dashboard controls.
+Reports are available per Scan ID from Reports and Scan Details pages. CSV contains one row per finding. HTML reports include target, start/end time, duration, severity counts, evidence, impact, remediation, and scope limitations. The Reports and Findings views support Scan ID, severity, category, and date range filters. CSV formula-like values are escaped before export.
 
 ## Evaluation methodology
 

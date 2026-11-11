@@ -4,7 +4,7 @@ def analyze_cookies(response, url):
     for c in response.cookies:
         # Never include cookie values in any finding.
         attrs=getattr(c,"_rest",{}) or {}; rest={k.lower():v for k,v in attrs.items()}; rules=[]
-        if url.lower().startswith("http:") and not c.secure: rules.append(("COOKIE-SECURE","MEDIUM","Secure"))
+        if not c.secure: rules.append(("COOKIE-SECURE","MEDIUM" if url.lower().startswith("http:") else "LOW","Secure"))
         if not c.has_nonstandard_attr("HttpOnly"): rules.append(("COOKIE-HTTPONLY","LOW","HttpOnly"))
         same=rest.get("samesite")
         if not same: rules.append(("COOKIE-SAMESITE","LOW","SameSite"))
