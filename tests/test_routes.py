@@ -1,4 +1,5 @@
 def test_pages_and_authorization(client):
+ assert client.get('/health').json=={"status":"ok","name":"VulnScan"}
  for path in ('/','/scans','/findings','/reports','/settings','/scans/new'):assert client.get(path).status_code==200
  r=client.post('/scans/new',data={'target':'http://127.0.0.1:8081'});assert r.status_code==200 and b'Confirm' in r.data
  assert client.get('/scans/missing').status_code==404
