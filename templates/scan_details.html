@@ -1,1 +1,23 @@
-{% extends 'base.html' %}{% block title %}Scan Details · VulnScan{% endblock %}{% block content %}<div class="page-head"><div><span class="eyebrow">ASSESSMENT / DETAIL</span><h1>Scan details</h1><p>{{ scan.target_url }}</p></div><div><a class="button" href="{{ url_for('download_report',scan_id=scan.scan_id,kind='csv') }}">Export CSV</a> <a class="button primary" href="{{ url_for('download_report',scan_id=scan.scan_id,kind='html') }}">HTML report</a></div></div>{% if scan.error %}<div class="notice error">{{ scan.error }}</div>{% endif %}<div class="cards"><div class="card metric"><span>Scan ID</span><b class="small-value mono">{{ scan.scan_id[:12] }}</b></div><div class="card metric"><span>Status</span><b class="{{ scan.status|lower }}">{{ scan.status }}</b></div><div class="card metric"><span>Pages checked</span><b>{{ scan.pages_checked }}</b></div><div class="card metric"><span>Total findings</span><b>{{ scan.total_findings }}</b></div>{% for sev in ['CRITICAL','HIGH','MEDIUM','LOW','INFO'] %}<div class="card metric"><span>{{ sev|title }}</span><b class="{{ sev|lower }}">{{ counts[sev] }}</b></div>{% endfor %}</div><div class="panel meta"><span>Started <b>{{ scan.started_at }}</b></span><span>Completed <b>{{ scan.completed_at or '—' }}</b></span></div><div class="panel"><div class="panel-head"><h2>Findings</h2><span>{{ findings|length }} observations</span></div>{% if findings %}<div class="table-wrap"><table><thead><tr><th>Severity</th><th>Finding</th><th>Category</th><th>URL</th><th></th></tr></thead><tbody>{% for f in findings %}<tr><td><span class="sev {{ f.severity|lower }}">{{ f.severity }}</span></td><td>{{ f.title }}</td><td>{{ f.category }}</td><td>{{ f.affected_url }}</td><td><a href="{{ url_for('finding_details',finding_id=f.finding_id) }}">View</a></td></tr>{% endfor %}</tbody></table></div>{% else %}<div class="empty">No findings for this scan.</div>{% endif %}</div>{% endblock %}
+{% extends 'base.html' %}
+{% block title %}Scan Details · VulnScan{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><span class="eyebrow">ASSESSMENT / DETAIL</span><h1>Scan details</h1><p class="url-cell">{{ scan.target_url }}</p></div>
+  <div class="actions-cell"><a class="button" href="{{ url_for('download_report',scan_id=scan.scan_id,kind='csv') }}">Export CSV</a><a class="button primary" href="{{ url_for('download_report',scan_id=scan.scan_id,kind='html') }}">HTML report</a></div>
+</div>
+{% if scan.error %}<div class="notice error" role="status">{{ scan.error }}</div>{% endif %}
+<div class="cards" aria-label="Scan summary">
+  <div class="card metric"><span>Scan ID</span><b class="small-value mono">{{ scan.scan_id[:12] }}</b></div>
+  <div class="card metric"><span>Status</span><b class="{{ scan.status|lower }}">{{ scan.status }}</b></div>
+  <div class="card metric"><span>Pages checked</span><b>{{ scan.pages_checked }}</b></div>
+  <div class="card metric"><span>Total findings</span><b>{{ scan.total_findings }}</b></div>
+  {% for severity in ['CRITICAL','HIGH','MEDIUM','LOW','INFO'] %}<div class="card metric"><span>{{ severity|title }}</span><b class="{{ severity|lower }}">{{ counts[severity] }}</b></div>{% endfor %}
+</div>
+<section class="panel scan-meta" aria-label="Scan timing"><div><span>Started</span><b>{{ scan.started_at }}</b></div><div><span>Completed</span><b>{{ scan.completed_at or '—' }}</b></div></section>
+<section class="panel"><div class="panel-head"><h2>Findings</h2><span>{{ findings|length }} recorded</span></div>
+  {% if findings %}<div class="table-wrap"><table><thead><tr><th>Severity</th><th>Finding</th><th>Category</th><th>Affected URL</th><th><span class="sr-only">Actions</span></th></tr></thead><tbody>
+  {% for finding in findings %}<tr><td><span class="sev {{ finding.severity|lower }}">{{ finding.severity }}</span></td><td>{{ finding.title }}</td><td>{{ finding.category }}</td><td class="url-cell">{{ finding.affected_url }}</td><td><a href="{{ url_for('finding_details',finding_id=finding.finding_id) }}">View</a></td></tr>{% endfor %}
+  </tbody></table></div>
+  {% else %}<div class="empty compact"><b>No findings for this scan</b><p>{% if scan.status == 'FAILED' %}Review the scan error above and verify the target is reachable.{% else %}The configured checks found no reportable issues.{% endif %}</p></div>{% endif %}
+</section>
+{% endblock %}

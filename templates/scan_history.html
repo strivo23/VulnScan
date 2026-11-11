@@ -1,1 +1,11 @@
-{% extends 'base.html' %}{% block title %}Scan History · VulnScan{% endblock %}{% block content %}<div class="page-head"><div><span class="eyebrow">ASSESSMENTS / HISTORY</span><h1>Scan history</h1><p>Previously completed authorized assessments.</p></div></div><div class="panel">{% if scans %}<div class="table-wrap"><table><thead><tr><th>Scan ID</th><th>Target</th><th>Started</th><th>Status</th><th>Pages</th><th>Findings</th><th></th></tr></thead><tbody>{% for s in scans %}<tr><td class="mono">{{ s.scan_id[:8] }}</td><td>{{ s.target_url }}</td><td>{{ s.started_at[:16] }}</td><td><span class="pill {{ s.status|lower }}">{{ s.status }}</span></td><td>{{ s.pages_checked }}</td><td>{{ s.total_findings }}</td><td><a href="{{ url_for('scan_details',scan_id=s.scan_id) }}">Details →</a></td></tr>{% endfor %}</tbody></table></div>{% else %}<div class="empty">No scans have been recorded.</div>{% endif %}</div>{% endblock %}
+{% extends 'base.html' %}
+{% block title %}Scan History · VulnScan{% endblock %}
+{% block content %}
+<div class="page-head"><div><span class="eyebrow">ASSESSMENTS / HISTORY</span><h1>Scan history</h1><p>Completed and failed authorized assessments.</p></div></div>
+<section class="panel" aria-label="Scan history">
+  {% if scans %}<div class="table-wrap"><table><thead><tr><th>Scan ID</th><th>Target</th><th>Started</th><th>Status</th><th>Pages</th><th>Findings</th><th><span class="sr-only">Actions</span></th></tr></thead><tbody>
+  {% for scan in scans %}<tr><td class="mono">{{ scan.scan_id[:8] }}</td><td class="url-cell">{{ scan.target_url }}</td><td>{{ scan.started_at[:16] }}</td><td><span class="pill {{ scan.status|lower }}">{{ scan.status }}</span></td><td>{{ scan.pages_checked }}</td><td>{{ scan.total_findings }}</td><td><a href="{{ url_for('scan_details',scan_id=scan.scan_id) }}">Details →</a></td></tr>{% endfor %}
+  </tbody></table></div>
+  {% else %}<div class="empty"><b>No scans have been recorded</b><p>Run the local lab evaluation or create a new authorized scan.</p><a class="button primary" href="{{ url_for('new_scan') }}">Create scan</a></div>{% endif %}
+</section>
+{% endblock %}

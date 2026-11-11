@@ -1,1 +1,14 @@
-{% extends 'base.html' %}{% block title %}Finding · VulnScan{% endblock %}{% block content %}<div class="page-head"><div><span class="eyebrow">FINDINGS / DETAIL</span><h1>{{ finding.title }}</h1><p>{{ finding.category }} · Rule {{ finding.rule_id }}</p></div><span class="sev {{ finding.severity|lower }}">{{ finding.severity }}</span></div><div class="panel detail-panel"><div class="detail-row"><span>Affected URL</span><a href="{{ finding.affected_url }}" rel="noreferrer">{{ finding.affected_url }}</a></div><div class="detail-row"><span>Detection time</span><b>{{ finding.detected_at }}</b></div><div class="detail-row"><span>Description</span><p>{{ finding.description }}</p></div><div class="detail-row"><span>Evidence</span><pre>{{ finding.evidence }}</pre></div><div class="detail-row"><span>Impact</span><p>{{ finding.impact }}</p></div><div class="detail-row"><span>Remediation</span><p>{{ finding.remediation }}</p></div><a class="button" href="{{ url_for('scan_details',scan_id=finding.scan_id) }}">← Back to scan</a></div>{% endblock %}
+{% extends 'base.html' %}
+{% block title %}Finding · VulnScan{% endblock %}
+{% block content %}
+<div class="page-head"><div><span class="eyebrow">FINDINGS / DETAIL</span><h1>{{ finding.title }}</h1><p>{{ finding.category }} · Rule {{ finding.rule_id }}</p></div><span class="sev {{ finding.severity|lower }}">{{ finding.severity }}</span></div>
+<section class="panel detail-panel" aria-label="Finding details">
+  <div class="detail-row"><span>Affected URL</span><a href="{{ finding.affected_url }}" rel="noreferrer">{{ finding.affected_url }}</a></div>
+  <div class="detail-row"><span>Detection time</span><b>{{ finding.detected_at }}</b></div>
+  <div class="detail-row"><span>Description</span><p>{{ finding.description }}</p></div>
+  <div class="detail-row"><span>Evidence</span><pre>{{ finding.evidence }}</pre></div>
+  <div class="detail-row"><span>Impact</span><p>{{ finding.impact }}</p></div>
+  <div class="detail-row"><span>Remediation</span><p>{{ finding.remediation }}</p></div>
+  <a class="button" href="{{ url_for('scan_details',scan_id=finding.scan_id) }}">← Back to scan</a>
+</section>
+{% endblock %}

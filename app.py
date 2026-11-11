@@ -62,7 +62,7 @@ def create_app(test_config=None):
             except Exception as e:
                 if scan:save_failed_scan(scan,findings,e,app.config["DATABASE"])
                 flash(f"Scan failed safely: {str(e)[:240]}","error")
-        return render_template("new_scan.html",targets=allowed())
+        return render_template("new_scan.html",targets=allowed(),form_data=request.form)
     @app.get("/scans")
     def scan_history():return render_template("scan_history.html",scans=db.list_scans(app.config["DATABASE"]))
     @app.get("/scans/<scan_id>")
@@ -75,7 +75,9 @@ def create_app(test_config=None):
     def findings_page():
         severity=request.args.get("severity") or None; category=request.args.get("category") or None
         date_from=request.args.get("date_from") or None; date_to=request.args.get("date_to") or None; scan_id=request.args.get("scan_id") or None
-        return render_template("findings.html",findings=db.get_findings(scan_id,app.config["DATABASE"],severity,category,date_from,date_to),severity=severity,category=category,date_from=date_from,date_to=date_to,scan_id=scan_id,scans=db.list_scans(app.config["DATABASE"]))
+        all_findings=db.get_findings(path=app.config["DATABASE"])
+        categories=sorted({f["category"] for f in all_findings})
+        return render_template("findings.html",findings=db.get_findings(scan_id,app.config["DATABASE"],severity,category,date_from,date_to),severity=severity,category=category,date_from=date_from,date_to=date_to,scan_id=scan_id,scans=db.list_scans(app.config["DATABASE"]),categories=categories)
     @app.get("/findings/<finding_id>")
     def finding_details(finding_id):
         finding=db.get_finding(finding_id,app.config["DATABASE"])
@@ -85,7 +87,9 @@ def create_app(test_config=None):
     def reports_page():
         scans=db.list_scans(app.config["DATABASE"]); selected=request.args.get("scan_id")
         if selected:scans=[s for s in scans if s["scan_id"]==selected]
-        return render_template("reports.html",scans=scans,all_scans=db.list_scans(app.config["DATABASE"]))
+        findings=db.get_findings(path=app.config["DATABASE"])
+        categories=sorted({f["category"] for f in findings})
+        return render_template("reports.html",scans=scans,all_scans=db.list_scans(app.config["DATABASE"]),categories=categories)
     @app.get("/reports/<scan_id>/<kind>")
     def download_report(scan_id,kind):
         if not db.get_scan(scan_id,app.config["DATABASE"]):abort(404)
@@ -107,9 +111,11 @@ def create_app(test_config=None):
                 if not host or "/" in host or "@" in host:raise ValueError("Enter a hostname only.")
                 validate_target("https://"+host, [host], True)
                 db.add_authorized_target(host,app.config["DATABASE"]); flash("Authorization allowlist updated.","success")
-            except Exception as e:flash(str(e),"error")
+            except Exception as e:
+                flash(str(e),"error")
+                return render_template("settings.html",targets=allowed(),form_host=request.form.get("host",""))
             return redirect(url_for("settings"))
-        return render_template("settings.html",targets=allowed())
+        return render_template("settings.html",targets=allowed(),form_host="")
     @app.get("/health")
     def health():return jsonify(status="ok",name="VulnScan")
     return app

@@ -1,1 +1,42 @@
-{% extends 'base.html' %}{% block title %}Dashboard · VulnScan{% endblock %}{% block content %}<div class="page-head"><div><span class="eyebrow">OVERVIEW / SECURITY POSTURE</span><h1>Assessment dashboard</h1><p>Monitor authorized scans and actionable findings.</p></div><a href="{{ url_for('new_scan') }}" class="button primary">Start a scan</a></div><div class="cards"><div class="card metric"><span>Total scans</span><b>{{ total_scans }}</b><small>Saved assessments</small></div><div class="card metric"><span>Total findings</span><b>{{ total_findings }}</b><small>Across all scans</small></div>{% for sev in ['CRITICAL','HIGH','MEDIUM','LOW'] %}<div class="card metric"><span>{{ sev|title }}</span><b class="{{ sev|lower }}">{{ stats[sev] }}</b><small>Recorded findings</small></div>{% endfor %}</div><div class="grid two"><div class="panel"><div class="panel-head"><h2>Findings by severity</h2><span>All scans</span></div><div class="chart-wrap"><canvas id="severityChart" data-values='{{ [stats.CRITICAL,stats.HIGH,stats.MEDIUM,stats.LOW,stats.INFO]|tojson }}'></canvas></div></div><div class="panel"><div class="panel-head"><h2>Vulnerability categories</h2><span>{{ categories|length }} categories</span></div><div class="chart-wrap"><canvas id="categoryChart" data-labels='{{ categories.keys()|list|tojson }}' data-values='{{ categories.values()|list|tojson }}'></canvas></div></div></div><div class="grid two"><div class="panel"><div class="panel-head"><h2>Findings over time</h2><span>Daily detection count</span></div><div class="chart-wrap"><canvas id="timelineChart" data-labels='{{ timeline|map(attribute=0)|list|tojson }}' data-values='{{ timeline|map(attribute=1)|list|tojson }}'></canvas></div></div><div class="panel"><div class="panel-head"><h2>Recent scan activity</h2><a href="{{ url_for('scan_history') }}">View all →</a></div>{% if scans %}<div class="table-wrap"><table><thead><tr><th>Target</th><th>Date</th><th>Status</th><th></th></tr></thead><tbody>{% for s in scans %}<tr><td>{{ s.target_url }}</td><td>{{ s.started_at[:16] }}</td><td><span class="pill {{ s.status|lower }}">{{ s.status }}</span></td><td><a href="{{ url_for('scan_details',scan_id=s.scan_id) }}">Open</a></td></tr>{% endfor %}</tbody></table></div>{% else %}<div class="empty"><b>No assessments yet</b><p>Start with the local vulnerable lab to see findings here.</p><a href="{{ url_for('new_scan') }}" class="button">Create first scan</a></div>{% endif %}</div></div>{% endblock %}
+{% extends 'base.html' %}
+{% block title %}Dashboard · VulnScan{% endblock %}
+{% block head %}<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script>{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><span class="eyebrow">OVERVIEW / SECURITY POSTURE</span><h1>Assessment dashboard</h1><p>Live totals from saved authorized scans.</p></div>
+  <a href="{{ url_for('new_scan') }}" class="button primary">Start a scan</a>
+</div>
+<div class="cards" aria-label="Saved scan summary">
+  <div class="card metric"><span>Total scans</span><b>{{ total_scans }}</b><small>Saved assessments</small></div>
+  <div class="card metric"><span>Total findings</span><b>{{ total_findings }}</b><small>Across saved scans</small></div>
+  {% for sev in ['CRITICAL','HIGH','MEDIUM','LOW'] %}
+  <div class="card metric"><span>{{ sev|title }}</span><b class="{{ sev|lower }}">{{ stats[sev] }}</b><small>Recorded findings</small></div>
+  {% endfor %}
+</div>
+<div class="grid two">
+  <section class="panel" aria-labelledby="severity-title">
+    <div class="panel-head"><h2 id="severity-title">Findings by severity</h2><span>All saved scans</span></div>
+    {% if total_findings %}<div class="chart-wrap"><canvas id="severityChart" role="img" aria-label="Doughnut chart of findings by severity" data-values='{{ [stats.CRITICAL,stats.HIGH,stats.MEDIUM,stats.LOW,stats.INFO]|tojson }}'></canvas></div>
+    {% else %}<div class="chart-empty"><b>No findings yet</b><p>Run an authorized scan to populate this chart.</p><a href="{{ url_for('new_scan') }}" class="button small">New scan</a></div>{% endif %}
+  </section>
+  <section class="panel" aria-labelledby="category-title">
+    <div class="panel-head"><h2 id="category-title">Vulnerability categories</h2><span>{{ categories|length }} categories</span></div>
+    {% if categories %}<div class="chart-wrap"><canvas id="categoryChart" role="img" aria-label="Bar chart of findings by category" data-labels='{{ categories.keys()|list|tojson }}' data-values='{{ categories.values()|list|tojson }}'></canvas></div>
+    {% else %}<div class="chart-empty"><b>No category data</b><p>Categories appear after VulnScan saves findings.</p></div>{% endif %}
+  </section>
+</div>
+<div class="grid two">
+  <section class="panel" aria-labelledby="timeline-title">
+    <div class="panel-head"><h2 id="timeline-title">Findings over time</h2><span>Daily detections</span></div>
+    {% if timeline %}<div class="chart-wrap"><canvas id="timelineChart" role="img" aria-label="Line chart of daily findings" data-labels='{{ timeline|map(attribute=0)|list|tojson }}' data-values='{{ timeline|map(attribute=1)|list|tojson }}'></canvas></div>
+    {% else %}<div class="chart-empty"><b>No timeline data</b><p>Daily counts will appear after a scan.</p></div>{% endif %}
+  </section>
+  <section class="panel" aria-labelledby="recent-title">
+    <div class="panel-head"><h2 id="recent-title">Recent scan activity</h2><a href="{{ url_for('scan_history') }}">View all →</a></div>
+    {% if scans %}<div class="table-wrap"><table><thead><tr><th>Target</th><th>Date</th><th>Status</th><th><span class="sr-only">Actions</span></th></tr></thead><tbody>
+      {% for scan in scans %}<tr><td class="url-cell">{{ scan.target_url }}</td><td>{{ scan.started_at[:16] }}</td><td><span class="pill {{ scan.status|lower }}">{{ scan.status }}</span></td><td><a href="{{ url_for('scan_details',scan_id=scan.scan_id) }}">Open</a></td></tr>{% endfor %}
+    </tbody></table></div>
+    {% else %}<div class="empty"><b>No assessments yet</b><p>Start with the local vulnerable lab or a target you’re authorized to assess.</p><a href="{{ url_for('new_scan') }}" class="button">Create first scan</a></div>{% endif %}
+  </section>
+</div>
+{% endblock %}

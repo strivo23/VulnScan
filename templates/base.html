@@ -1,1 +1,42 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{% block title %}VulnScan{% endblock %}</title><link rel="stylesheet" href="{{ url_for('static',filename='css/style.css') }}"><script src="https://cdn.jsdelivr.net/npm/chart.js"></script></head><body><aside class="sidebar"><a class="brand" href="{{ url_for('dashboard') }}"><span class="shield">V</span> VulnScan</a><small>APPLICATION SECURITY</small><nav><a href="{{ url_for('dashboard') }}">▦ &nbsp;Overview</a><a href="{{ url_for('new_scan') }}">＋ &nbsp;New Scan</a><a href="{{ url_for('scan_history') }}">◷ &nbsp;Scan History</a><a href="{{ url_for('findings_page') }}">⚑ &nbsp;Findings</a><a href="{{ url_for('reports_page') }}">▤ &nbsp;Reports</a><a href="{{ url_for('settings') }}">⚙ &nbsp;Settings</a></nav><div class="sidebar-foot">Authorized assessment only<br><span class="online">● Local scanner</span></div></aside><main class="main"><header class="topbar"><div><span class="eyebrow">DEFENSIVE SECURITY PLATFORM</span><strong>VulnScan Console</strong></div><a class="button primary" href="{{ url_for('new_scan') }}">＋ New assessment</a></header><section class="content">{% with messages=get_flashed_messages(with_categories=true) %}{% for cat,msg in messages %}<div class="notice {{ cat }}">{{ msg }}</div>{% endfor %}{% endwith %}{% block content %}{% endblock %}</section><footer>VulnScan · Safe, authorized configuration assessment</footer></main><script src="{{ url_for('static',filename='js/dashboard.js') }}"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>{% block title %}VulnScan{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <aside class="sidebar">
+    <a class="brand" href="{{ url_for('dashboard') }}" aria-label="VulnScan home">
+      <span class="shield" aria-hidden="true">V</span><span>VulnScan</span>
+    </a>
+    <small class="sidebar-label">APPLICATION SECURITY</small>
+    <nav aria-label="Main navigation">
+      <a class="{{ 'active' if request.endpoint == 'dashboard' else '' }}" {% if request.endpoint == 'dashboard' %}aria-current="page"{% endif %} href="{{ url_for('dashboard') }}"><span aria-hidden="true">▦</span> Overview</a>
+      <a class="{{ 'active' if request.endpoint == 'new_scan' else '' }}" {% if request.endpoint == 'new_scan' %}aria-current="page"{% endif %} href="{{ url_for('new_scan') }}"><span aria-hidden="true">＋</span> New Scan</a>
+      <a class="{{ 'active' if request.endpoint in ('scan_history', 'scan_details') else '' }}" {% if request.endpoint == 'scan_history' %}aria-current="page"{% elif request.endpoint == 'scan_details' %}aria-current="location"{% endif %} href="{{ url_for('scan_history') }}"><span aria-hidden="true">◷</span> Scan History</a>
+      <a class="{{ 'active' if request.endpoint in ('findings_page', 'finding_details') else '' }}" {% if request.endpoint == 'findings_page' %}aria-current="page"{% elif request.endpoint == 'finding_details' %}aria-current="location"{% endif %} href="{{ url_for('findings_page') }}"><span aria-hidden="true">⚑</span> Findings</a>
+      <a class="{{ 'active' if request.endpoint in ('reports_page', 'download_report') else '' }}" {% if request.endpoint == 'reports_page' %}aria-current="page"{% elif request.endpoint == 'download_report' %}aria-current="location"{% endif %} href="{{ url_for('reports_page') }}"><span aria-hidden="true">▤</span> Reports</a>
+      <a class="{{ 'active' if request.endpoint == 'settings' else '' }}" {% if request.endpoint == 'settings' %}aria-current="page"{% endif %} href="{{ url_for('settings') }}"><span aria-hidden="true">⚙</span> Settings</a>
+    </nav>
+    <div class="sidebar-foot">Authorized assessment only<br><span class="online">● Local scanner</span></div>
+  </aside>
+  <main class="main">
+    <header class="topbar">
+      <div><span class="eyebrow">DEFENSIVE SECURITY PLATFORM</span><strong>VulnScan Console</strong></div>
+      {% if request.endpoint != 'new_scan' %}<a class="button primary" href="{{ url_for('new_scan') }}">＋ New assessment</a>{% endif %}
+    </header>
+    <section class="content">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}<div class="notice {{ category }}" role="status">{{ message }}</div>{% endfor %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </section>
+    <footer>VulnScan · Safe, authorized configuration assessment</footer>
+  </main>
+  <script src="{{ url_for('static', filename='js/dashboard.js') }}" defer></script>
+</body>
+</html>

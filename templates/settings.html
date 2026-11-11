@@ -1,1 +1,20 @@
-{% extends 'base.html' %}{% block title %}Settings · VulnScan{% endblock %}{% block content %}<div class="page-head"><div><span class="eyebrow">CONFIGURATION / SCOPE</span><h1>Authorization allowlist</h1><p>Public domains must be explicitly authorized before scanning.</p></div></div><div class="grid two"><form method="post" class="panel form-panel"><input type="hidden" name="_csrf_token" value="{{ csrf_token }}"><h2>Add authorized hostname</h2><label>Hostname</label><input name="host" placeholder="example.org" required><p class="muted">Adds a hostname, not credentials or cookies. You confirm you have permission to add this scope.</p><button class="button primary">Add to allowlist</button></form><div class="panel"><h2>Active targets</h2>{% for t in targets %}<div class="allow-row"><span>● {{ t }}</span><form method="post" class="inline-form"><input type="hidden" name="_csrf_token" value="{{ csrf_token }}"><input type="hidden" name="action" value="remove"><input type="hidden" name="host" value="{{ t }}"><button class="button small" type="submit">Remove</button></form></div>{% else %}<p class="muted">No public hostnames authorized.</p>{% endfor %}</div></div><div class="panel policy"><h2>Scanner policy</h2><p>Loopback and private IP literals are in scope. Hostnames must be allowlisted unless they end in .localhost. DNS answers are validated and pinned for each HTTP request and TLS handshake. Redirects are followed manually after scope validation; environment proxies are disabled. The scanner sends safe GET/HEAD requests only and does not store cookie values.</p></div>{% endblock %}
+{% extends 'base.html' %}
+{% block title %}Settings · VulnScan{% endblock %}
+{% block content %}
+<div class="page-head"><div><span class="eyebrow">CONFIGURATION / SCOPE</span><h1>Authorization allowlist</h1><p>Authorize a hostname before scanning it.</p></div></div>
+<div class="grid two settings-grid">
+  <form method="post" class="panel form-panel">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+    <h2>Add authorized hostname</h2>
+    <label for="allowHost">Hostname or public IP</label><input id="allowHost" name="host" placeholder="example.org" value="{{ form_host }}" autocomplete="off" aria-describedby="allowHostHelp" required>
+    <p id="allowHostHelp" class="muted">Add only a system you own or have explicit permission to assess. Credentials and URL paths are not accepted.</p>
+    <button class="button primary" type="submit">Add to allowlist</button>
+  </form>
+  <section class="panel" aria-labelledby="authorizedTargetsHeading">
+    <h2 id="authorizedTargetsHeading">Active targets <span class="count-badge">{{ targets|length }}</span></h2>
+    {% for target in targets %}<div class="allow-row"><span class="allow-host">● {{ target }}</span><form method="post" class="inline-form"><input type="hidden" name="_csrf_token" value="{{ csrf_token }}"><input type="hidden" name="action" value="remove"><input type="hidden" name="host" value="{{ target }}"><button class="button small danger-quiet" type="submit" aria-label="Remove {{ target }} from allowlist">Remove</button></form></div>
+    {% else %}<div class="empty compact"><b>No public/custom targets authorized</b><p>Local IP targets do not need an allowlist entry.</p></div>{% endfor %}
+  </section>
+</div>
+<section class="panel policy"><h2>Scanner policy</h2><p>Loopback and private IP literals are allowed. Custom hostnames and public targets must be allowlisted. DNS results are validated and pinned per request; link-local and special-purpose addresses are blocked. Redirects are revalidated before following. Requests use safe GET/HEAD methods only.</p></section>
+{% endblock %}

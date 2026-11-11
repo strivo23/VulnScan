@@ -1,1 +1,22 @@
-{% extends 'base.html' %}{% block title %}New Scan · VulnScan{% endblock %}{% block content %}<div class="page-head"><div><span class="eyebrow">ASSESSMENT / CREATE</span><h1>New scan</h1><p>Only scan systems you own or have explicit permission to assess.</p></div></div><form method="post" id="newScanForm" class="panel form-panel"><input type="hidden" name="_csrf_token" value="{{ csrf_token }}"><label for="target">Target URL</label><input id="target" name="target" type="url" placeholder="http://127.0.0.1:8081" required><small>Local/private addresses are permitted. Public domains must first be added under Settings.</small><div class="form-grid"><div><label>Request timeout (seconds)</label><input name="timeout" type="number" min="1" max="20" value="5"></div><div><label>Maximum pages</label><input name="max_pages" type="number" min="1" max="50" value="10"></div><div><label>Request delay (seconds)</label><input name="delay" type="number" min="0" max="2" step="0.05" value="0.15"></div></div><div class="scope-box"><b>Safe checks included</b><p>HTTP security headers, observed cookies, common public resources, HTTP to HTTPS behavior, basic directory index indicators, and verified TLS certificates. No payload attacks or destructive testing.</p></div><label class="check"><input type="checkbox" name="authorized" value="yes" required> I confirm that I own this target or have explicit authorization to assess it.</label><button class="button primary" id="startScanButton" type="submit">Start authorized scan →</button><p id="scanProgress" class="muted" hidden>Validating authorization and running bounded checks…</p></form>{% endblock %}
+{% extends 'base.html' %}
+{% block title %}New Scan · VulnScan{% endblock %}
+{% block content %}
+<div class="page-head"><div><span class="eyebrow">ASSESSMENT / CREATE</span><h1>New scan</h1><p>Only scan systems you own or have explicit permission to assess.</p></div></div>
+<form method="post" id="newScanForm" class="panel form-panel">
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+  <label for="target">Target URL</label>
+  <input id="target" name="target" type="url" inputmode="url" autocomplete="url" list="authorizedHosts" placeholder="http://127.0.0.1:8081" value="{{ form_data.get('target','') }}" aria-describedby="targetHelp" required>
+  <datalist id="authorizedHosts">{% for host in targets %}<option value="https://{{ host }}/">{% endfor %}</datalist>
+  <small id="targetHelp">Local/private IPs are allowed. Add custom hostnames and public targets in Settings first.</small>
+  <fieldset class="config-fieldset"><legend>Scan limits</legend>
+    <div class="form-grid">
+      <div><label for="timeout">Request timeout</label><div class="input-suffix"><input id="timeout" name="timeout" type="number" min="1" max="20" step="1" value="{{ form_data.get('timeout','5') }}"><span>sec</span></div></div>
+      <div><label for="maxPages">Maximum pages</label><input id="maxPages" name="max_pages" type="number" min="1" max="50" step="1" value="{{ form_data.get('max_pages','10') }}"></div>
+      <div><label for="delay">Request delay</label><div class="input-suffix"><input id="delay" name="delay" type="number" min="0" max="2" step="0.05" value="{{ form_data.get('delay','0.15') }}"><span>sec</span></div></div>
+    </div>
+  </fieldset>
+  <div class="scope-box"><b>Safe checks included</b><p>HTTP security headers, observed cookie attributes, common public resources, HTTP-to-HTTPS behavior, basic directory-index indicators, and verified TLS certificates. No payload attacks or destructive testing.</p></div>
+  <label class="check"><input type="checkbox" name="authorized" value="yes" {% if form_data.get('authorized') == 'yes' %}checked{% endif %} required><span>I confirm that I own this target or have explicit authorization to assess it.</span></label>
+  <div class="form-actions"><button class="button primary" id="startScanButton" type="submit">Start authorized scan <span aria-hidden="true">→</span></button><p id="scanProgress" class="muted" role="status" hidden>Validating authorization and running bounded checks…</p></div>
+</form>
+{% endblock %}
