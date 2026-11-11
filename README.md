@@ -80,11 +80,19 @@ Run tests:
 pytest -q
 ```
 
-Evaluate known fixture conditions using real local HTTP scans (start both fixture processes first):
+Evaluate known fixture conditions using real local HTTP scans. The evaluation runner starts and stops both fixture servers on loopback automatically:
 
 ```powershell
 python -m evaluation.run_labs
 ```
+
+To save those actual scanner runs in SQLite so the dashboard counters and charts show the local results, run:
+
+```powershell
+python -m evaluation.run_labs --persist
+```
+
+The saved rows appear in Scan History and Reports with the ephemeral loopback ports used during that run. They are actual observations from the vulnerable and secure fixtures, not seeded or hard-coded findings.
 
 ## Authorized scanning policy
 
