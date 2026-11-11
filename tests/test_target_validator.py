@@ -13,4 +13,8 @@ def test_rejects_non_http_credentials_and_public(monkeypatch):
 def test_redirect_scope(monkeypatch):
     assert validate_redirect("http://127.0.0.1/","/next")
     with pytest.raises(TargetError):validate_redirect("https://public.example/","http://127.0.0.1/")
+def test_mixed_dns_answers_are_rejected_for_allowlisted_hosts(monkeypatch):
+    import ipaddress
+    monkeypatch.setattr("scanner.target_validator.resolve_ips",lambda host:{ipaddress.ip_address('10.0.0.8'),ipaddress.ip_address('8.8.8.8')})
+    with pytest.raises(TargetError):validate_target('https://mixed.example',['mixed.example'],True)
 def test_normalize():assert normalize_url("HTTP://LOCALHOST") == "http://localhost/"

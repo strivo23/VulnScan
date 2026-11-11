@@ -2,7 +2,7 @@ import time, uuid
 from datetime import datetime, timezone
 from urllib.parse import urljoin, urlsplit
 from bs4 import BeautifulSoup
-from .target_validator import validate_target
+from .target_validator import validate_target, validate_target_details
 from .http_scanner import SafeClient
 from .header_analyzer import analyze_headers
 from .cookie_analyzer import analyze_cookies
@@ -45,8 +45,8 @@ def run_scan(target, allowlist=(), timeout=5, max_pages=10, delay=.15, confirm=F
         for f in check_resources(client,target):add(f,target)
     except Exception:pass
     try:
-        validate_target(target,allowlist,confirm=True)
-        tls=analyze_tls(target,timeout)
+        _,tls_addresses=validate_target_details(target,allowlist,confirm=True)
+        tls=analyze_tls(target,timeout,tls_addresses)
         if tls.get("valid") is False:
             add(dict(rule_id="TLS-INVALID",title="TLS certificate validation failed",category="TLS",severity="HIGH",description=RULES["TLS-INVALID"],evidence=tls.get("reason","TLS verification failed"),impact="Clients cannot establish authenticated transport.",remediation="Use a valid trusted certificate matching the target hostname."),target)
         elif tls.get("valid") is True:

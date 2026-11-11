@@ -28,15 +28,23 @@ def is_private_or_loopback(host):
     return all(ip.is_private or ip.is_loopback or ip.is_link_local for ip in ips)
 
 def validate_target(url, allowlist=(), confirm=False):
+    return validate_target_details(url,allowlist,confirm)[0]
+
+def validate_target_details(url, allowlist=(), confirm=False):
     if not confirm: raise TargetError("Confirm that you are authorized to assess this target.")
     norm=normalize_url(url); host=urlsplit(norm).hostname
     allowed={str(x).lower().rstrip(".") for x in allowlist}
-    if host not in ("localhost",) and host not in allowed:
-        if not is_private_or_loopback(host): raise TargetError("Public targets must be explicitly added to the authorization allowlist.")
-    # Resolve on every validation, including allowlisted hosts, to reject unspecified/multicast/reserved endpoints.
     ips=resolve_ips(host)
+    if not ips: raise TargetError("Hostname has no address records.")
+    if host=="localhost" and any(not ip.is_loopback for ip in ips): raise TargetError("localhost resolved outside the loopback range.")
+    if host not in ("localhost",) and host not in allowed:
+        if not all(ip.is_private or ip.is_loopback or ip.is_link_local for ip in ips): raise TargetError("Public targets must be explicitly added to the authorization allowlist.")
+    # Reject mixed public/private DNS answers even for an allowlisted name; they make split-view DNS bypasses harder.
+    if host in allowed and any(ip.is_private or ip.is_loopback or ip.is_link_local for ip in ips) and any(ip.is_global for ip in ips):
+        raise TargetError("Hostname resolves to a mixed public/private address set.")
+    # The caller receives this exact validated DNS set and pins the HTTP connection to one address.
     if any(ip.is_unspecified or ip.is_multicast or ip.is_reserved for ip in ips): raise TargetError("Target resolves to a prohibited IP address.")
-    return norm
+    return norm,ips
 
 def validate_redirect(source_url, location, allowlist=()):
     from urllib.parse import urljoin
