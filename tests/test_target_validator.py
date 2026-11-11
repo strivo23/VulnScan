@@ -17,4 +17,13 @@ def test_mixed_dns_answers_are_rejected_for_allowlisted_hosts(monkeypatch):
     import ipaddress
     monkeypatch.setattr("scanner.target_validator.resolve_ips",lambda host:{ipaddress.ip_address('10.0.0.8'),ipaddress.ip_address('8.8.8.8')})
     with pytest.raises(TargetError):validate_target('https://mixed.example',['mixed.example'],True)
+def test_link_local_metadata_and_unlisted_private_hostname_are_blocked(monkeypatch):
+    import ipaddress
+    monkeypatch.setattr("scanner.target_validator.resolve_ips",lambda host:{ipaddress.ip_address('169.254.169.254')})
+    with pytest.raises(TargetError):validate_target('http://169.254.169.254/latest/meta-data',confirm=True)
+    monkeypatch.setattr("scanner.target_validator.resolve_ips",lambda host:{ipaddress.ip_address('10.0.0.8')})
+    with pytest.raises(TargetError):validate_target('http://unlisted.lab',confirm=True)
+def test_public_ip_literal_needs_allowlist():
+    with pytest.raises(TargetError):validate_target('https://8.8.8.8',confirm=True)
+    assert validate_target('https://8.8.8.8',['8.8.8.8'],True)
 def test_normalize():assert normalize_url("HTTP://LOCALHOST") == "http://localhost/"

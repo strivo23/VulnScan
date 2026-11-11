@@ -6,13 +6,17 @@ from lab.secure_app import app as secure
 from scanner.detection_engine import run_scan
 from evaluation.metrics import calculate_metrics
 
-def run_app(flask_app,port):
+def run_app(flask_app,port=0):
     server=make_server("127.0.0.1",port,flask_app,threaded=True); thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start();return server
 
 def main():
-    servers=[run_app(vulnerable,8081),run_app(secure,8082)]
+    servers=[]
     try:
-        observed={"vuln":run_scan("http://127.0.0.1:8081",confirm=True)[0],"secure":run_scan("http://127.0.0.1:8082",confirm=True)[0]}
+        servers.append(run_app(vulnerable))
+        servers.append(run_app(secure))
+        vuln_url=f"http://127.0.0.1:{servers[0].server_port}"
+        secure_url=f"http://127.0.0.1:{servers[1].server_port}"
+        observed={"vuln":run_scan(vuln_url,confirm=True)[0],"secure":run_scan(secure_url,confirm=True)[0]}
     finally:
         for server in servers:server.shutdown()
     cases=json.loads((Path(__file__).parents[1]/"data/evaluation_cases.json").read_text(encoding="utf-8")); outcomes=[]

@@ -1,16 +1,33 @@
-import csv, io, uuid
+import hmac, secrets, uuid
 from datetime import datetime, timezone
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, Response, abort
+from urllib.parse import urlsplit
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, Response, abort, session
 from config import SECRET_KEY, DB_PATH
 from database import db
 from scanner.detection_engine import run_scan
-from scanner.target_validator import validate_target, TargetError, normalize_url
+from scanner.target_validator import validate_target, TargetError
 from reports.report_generator import csv_report, html_report
+
+def save_failed_scan(scan, findings, error, database_path):
+    scan.update(completed_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),status="FAILED",error=str(error)[:500])
+    scan.setdefault("pages_checked",0)
+    try:db.save_scan(scan,findings,database_path)
+    except Exception:pass
 
 def create_app(test_config=None):
     app=Flask(__name__); app.config.update(SECRET_KEY=SECRET_KEY, DATABASE=str(DB_PATH))
     if test_config:app.config.update(test_config)
     db.init_db(app.config["DATABASE"])
+    @app.before_request
+    def protect_state_changes():
+        if request.method=="POST":
+            expected=session.get("_csrf_token","")
+            supplied=request.form.get("_csrf_token","")
+            if not expected or not supplied or not hmac.compare_digest(expected,supplied):abort(400)
+    @app.context_processor
+    def inject_csrf_token():
+        if "_csrf_token" not in session:session["_csrf_token"]=secrets.token_urlsafe(32)
+        return {"csrf_token":session["_csrf_token"]}
     def allowed():return db.authorized_targets(app.config["DATABASE"])
     @app.get("/")
     def dashboard():
@@ -26,16 +43,25 @@ def create_app(test_config=None):
     @app.route("/scans/new",methods=["GET","POST"])
     def new_scan():
         if request.method=="POST":
+            scan=None; findings=[]
             target=request.form.get("target",""); confirm=request.form.get("authorized")=="yes"
             try:
                 target=validate_target(target,allowed(),confirm)
                 scan_id=str(uuid.uuid4()); start=datetime.now(timezone.utc).isoformat(timespec="seconds")
                 scan={"scan_id":scan_id,"target_url":target,"started_at":start,"status":"RUNNING"}
                 findings,pages=run_scan(target,allowed(),timeout=request.form.get("timeout",5),max_pages=request.form.get("max_pages",10),delay=request.form.get("delay",.15),confirm=True)
-                scan.update(completed_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),status="COMPLETED",pages_checked=pages)
-                db.save_scan(scan,findings,app.config["DATABASE"]); flash(f"Scan complete: {pages} page(s), {len(findings)} finding(s).","success"); return redirect(url_for("scan_details",scan_id=scan_id))
-            except (TargetError,ValueError) as e:flash(str(e),"error")
-            except Exception as e:flash(f"Scan failed safely: {str(e)[:240]}","error")
+                failed=pages==0 and not findings
+                scan.update(completed_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),status="FAILED" if failed else "COMPLETED",pages_checked=pages,error="No pages could be retrieved from this target." if failed else None)
+                db.save_scan(scan,findings,app.config["DATABASE"])
+                if failed:flash(scan["error"],"error")
+                else:flash(f"Scan complete: {pages} page(s), {len(findings)} finding(s).","success")
+                return redirect(url_for("scan_details",scan_id=scan_id))
+            except (TargetError,ValueError) as e:
+                if scan:save_failed_scan(scan,findings,e,app.config["DATABASE"])
+                flash(str(e),"error")
+            except Exception as e:
+                if scan:save_failed_scan(scan,findings,e,app.config["DATABASE"])
+                flash(f"Scan failed safely: {str(e)[:240]}","error")
         return render_template("new_scan.html",targets=allowed())
     @app.get("/scans")
     def scan_history():return render_template("scan_history.html",scans=db.list_scans(app.config["DATABASE"]))
@@ -71,8 +97,13 @@ def create_app(test_config=None):
     def settings():
         if request.method=="POST":
             try:
+                if request.form.get("action")=="remove":
+                    host=request.form.get("host","").strip().lower().rstrip(".")
+                    removed=db.remove_authorized_target(host,app.config["DATABASE"])
+                    flash("Authorization removed." if removed else "Target was not on the active allowlist.","success" if removed else "error")
+                    return redirect(url_for("settings"))
                 host=request.form.get("host","").strip().lower().rstrip(".")
-                if "://" in host:host=urlsplit_host=__import__("urllib.parse",fromlist=["urlsplit"]).urlsplit(host).hostname
+                if "://" in host:host=urlsplit(host).hostname or ""
                 if not host or "/" in host or "@" in host:raise ValueError("Enter a hostname only.")
                 validate_target("https://"+host, [host], True)
                 db.add_authorized_target(host,app.config["DATABASE"]); flash("Authorization allowlist updated.","success")

@@ -25,7 +25,15 @@ def resolve_ips(host):
 def is_private_or_loopback(host):
     ips=resolve_ips(host)
     if not ips: raise TargetError("Hostname has no address records.")
-    return all(ip.is_private or ip.is_loopback or ip.is_link_local for ip in ips)
+    return all(_is_lab_address(ip) for ip in ips)
+
+def _is_lab_address(ip):
+    if isinstance(ip,ipaddress.IPv6Address) and ip.ipv4_mapped:
+        return _is_lab_address(ip.ipv4_mapped)
+    if ip.is_loopback:return True
+    if isinstance(ip,ipaddress.IPv4Address):
+        return any(ip in network for network in (ipaddress.ip_network("10.0.0.0/8"),ipaddress.ip_network("172.16.0.0/12"),ipaddress.ip_network("192.168.0.0/16")))
+    return ip in ipaddress.ip_network("fc00::/7")
 
 def validate_target(url, allowlist=(), confirm=False):
     return validate_target_details(url,allowlist,confirm)[0]
@@ -36,14 +44,23 @@ def validate_target_details(url, allowlist=(), confirm=False):
     allowed={str(x).lower().rstrip(".") for x in allowlist}
     ips=resolve_ips(host)
     if not ips: raise TargetError("Hostname has no address records.")
-    if host=="localhost" and any(not ip.is_loopback for ip in ips): raise TargetError("localhost resolved outside the loopback range.")
-    if host not in ("localhost",) and host not in allowed:
-        if not all(ip.is_private or ip.is_loopback or ip.is_link_local for ip in ips): raise TargetError("Public targets must be explicitly added to the authorization allowlist.")
+    if any(ip.is_link_local or ip.is_unspecified or ip.is_multicast or ip.is_reserved for ip in ips):
+        raise TargetError("Target resolves to a prohibited link-local, reserved, or special-purpose IP address.")
+    local_name=host=="localhost" or host.endswith(".localhost")
+    if local_name and any(not ip.is_loopback for ip in ips): raise TargetError(".localhost names must resolve only to loopback addresses.")
+    try:literal=ipaddress.ip_address(host)
+    except ValueError:literal=None
+    if literal is not None and not (_is_lab_address(literal) or literal.is_global):
+        raise TargetError("Only loopback, private lab, or globally routable IP addresses may be scanned.")
+    if literal is not None and literal.is_global and host not in allowed:
+        raise TargetError("Public IP addresses must be explicitly added to the authorization allowlist.")
+    if literal is None and not local_name and host not in allowed:
+        raise TargetError("Hostnames must be explicitly added to the authorization allowlist; private IP literals are allowed for lab targets.")
     # Reject mixed public/private DNS answers even for an allowlisted name; they make split-view DNS bypasses harder.
-    if host in allowed and any(ip.is_private or ip.is_loopback or ip.is_link_local for ip in ips) and any(ip.is_global for ip in ips):
+    if host in allowed and any(_is_lab_address(ip) for ip in ips) and any(ip.is_global for ip in ips):
         raise TargetError("Hostname resolves to a mixed public/private address set.")
     # The caller receives this exact validated DNS set and pins the HTTP connection to one address.
-    if any(ip.is_unspecified or ip.is_multicast or ip.is_reserved for ip in ips): raise TargetError("Target resolves to a prohibited IP address.")
+    if any(not (_is_lab_address(ip) or ip.is_global) for ip in ips): raise TargetError("Target resolves to a prohibited non-public address.")
     return norm,ips
 
 def validate_redirect(source_url, location, allowlist=()):

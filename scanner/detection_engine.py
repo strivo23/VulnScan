@@ -12,6 +12,7 @@ from .severity import RULES
 
 def run_scan(target, allowlist=(), timeout=5, max_pages=10, delay=.15, confirm=False):
     target=validate_target(target,allowlist,confirm)
+    max_pages=max(1,min(int(max_pages),50))
     client=SafeClient(allowlist,timeout,delay); findings=[]; seen=set(); visited=set(); queue=[target]
     def add(f,url):
         key=(f["rule_id"],url)
@@ -60,4 +61,5 @@ def run_scan(target, allowlist=(), timeout=5, max_pages=10, delay=.15, confirm=F
             if not (response.is_redirect and loc.lower().startswith("https://")):
                 add(dict(rule_id="HTTP-HTTPS",title="HTTP endpoint does not redirect to HTTPS",category="Transport Security",severity="MEDIUM",description="The tested HTTP endpoint did not return a direct redirect to HTTPS.",evidence=f"HTTP {response.status_code}; Location: {loc or 'not present'}",impact="Traffic sent over HTTP can be observed or modified in transit.",remediation="Redirect HTTP to HTTPS and serve the application with a valid TLS certificate."),target)
         except Exception:pass
+    client.close()
     return findings,pages

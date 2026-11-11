@@ -17,6 +17,12 @@ def analyze_headers(headers, url):
             match=re.search(r"max-age\s*=\s*(\d+)",value,re.I); weak=not match or int(match.group(1))==0
         if name=="X-Content-Type-Options" and value: weak=value.strip().lower()!="nosniff"
         if name=="X-Frame-Options" and value: weak=value.strip().lower() not in ("deny","sameorigin") and "frame-ancestors" not in lower.get("content-security-policy","").lower()
+        if name=="Referrer-Policy" and value:
+            safe={"no-referrer","same-origin","strict-origin","strict-origin-when-cross-origin"}
+            recognized=[part.strip().lower() for part in value.split(",") if part.strip().lower() in safe|{"origin","origin-when-cross-origin","no-referrer-when-downgrade","unsafe-url"}]
+            weak=not recognized or recognized[-1] not in safe
+        if name=="Permissions-Policy" and value:
+            weak=any(part.split("=",1)[-1].strip() in ("*","(*)") for part in value.split(",") if "=" in part)
         if not value or weak:
             severity=sev if not weak else ("LOW" if rule=="HDR-CSP" else sev)
             if rule=="HDR-HSTS" and not url.lower().startswith("https:"): severity="INFO"

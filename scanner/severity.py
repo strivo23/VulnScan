@@ -9,6 +9,7 @@ RULES = {
  "COOKIE-SECURE": "A cookie sent over HTTP without Secure is MEDIUM; Secure absence on HTTPS-only observation is LOW.",
  "COOKIE-HTTPONLY": "Missing HttpOnly is LOW for session exposure to script; cookie purpose is not inferred.",
  "COOKIE-SAMESITE": "Missing SameSite is LOW because cross-site request protections are reduced.",
+ "COOKIE-SAMESITE-SECURE": "SameSite=None without Secure permits cross-site cookie delivery without enforcing HTTPS.",
  "DISC-SERVER": "Explicit server product/version disclosure is LOW absent evidence of an exploitable version.",
  "HTTP-HTTPS": "HTTP endpoint without observed HTTPS redirect is MEDIUM due to transport exposure.",
  "DIR-LIST": "Observable directory listing is MEDIUM because file names and contents may be exposed.",

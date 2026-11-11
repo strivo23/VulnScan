@@ -20,6 +20,10 @@ def add_authorized_target(target, path=None):
     with connect(path) as db:
         db.execute("INSERT INTO authorized_targets(target,authorization_confirmed,created_at,active) VALUES(?,?,?,1) ON CONFLICT(target) DO UPDATE SET authorization_confirmed=1,active=1", (target,1,now()))
 
+def remove_authorized_target(target,path=None):
+    with connect(path) as db:
+        return db.execute("UPDATE authorized_targets SET active=0 WHERE target=?",(target,)).rowcount
+
 def authorized_targets(path=None):
     with connect(path) as db: return [r["target"] for r in db.execute("SELECT target FROM authorized_targets WHERE active=1 AND authorization_confirmed=1")]
 

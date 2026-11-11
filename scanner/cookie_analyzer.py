@@ -8,6 +8,8 @@ def analyze_cookies(response, url):
         if not c.has_nonstandard_attr("HttpOnly"): rules.append(("COOKIE-HTTPONLY","LOW","HttpOnly"))
         same=rest.get("samesite")
         if not same: rules.append(("COOKIE-SAMESITE","LOW","SameSite"))
+        elif str(same).lower()=="none" and not c.secure:
+            rules.append(("COOKIE-SAMESITE-SECURE","MEDIUM" if url.lower().startswith("http:") else "LOW","SameSite=None requires Secure"))
         for rule,sev,attr in rules:
             findings.append(dict(rule_id=rule+"-"+c.name,title=f"Cookie {attr} attribute missing",category="Cookie Security",severity=sev,description=RULES[rule],evidence=f"Cookie name: {c.name}; {attr} attribute is absent.",impact="Cookie protection is reduced. Cookie values are intentionally excluded.",remediation=f"Set the {attr} attribute on security-sensitive cookies."))
         if c.expires is None and not c.discard:

@@ -1,4 +1,5 @@
 import requests
+import math
 from urllib.parse import urlsplit
 from urllib3 import HTTPConnectionPool, HTTPSConnectionPool
 from requests.adapters import HTTPAdapter
@@ -29,9 +30,15 @@ class PinnedAdapter(HTTPAdapter):
         if self.pool:self.pool.close()
         super().close()
 
+def _bounded_number(value, default, minimum, maximum):
+    try:number=float(value)
+    except (TypeError,ValueError):number=default
+    if not math.isfinite(number):number=default
+    return max(minimum,min(number,maximum))
+
 class SafeClient:
     def __init__(self, allowlist=(), timeout=DEFAULT_TIMEOUT, delay=0.15):
-        self.allowlist=allowlist; self.timeout=max(1,min(float(timeout),20)); self.delay=max(0,min(float(delay),2))
+        self.allowlist=allowlist; self.timeout=_bounded_number(timeout,DEFAULT_TIMEOUT,1,20); self.delay=_bounded_number(delay,0.15,0,2)
         self.session=requests.Session(); self.session.trust_env=False
         self.session.headers.update({"User-Agent":USER_AGENT,"Accept":"text/html,application/xhtml+xml,*/*;q=0.2"})
         self.adapter=PinnedAdapter(); self.session.mount("http://",self.adapter); self.session.mount("https://",self.adapter)
@@ -53,7 +60,9 @@ class SafeClient:
                     size+=len(chunk); chunks.append(chunk[:max(0,MAX_BODY_BYTES-size)])
                     if size>=MAX_BODY_BYTES: break
                 resp._content=b"".join(chunks); resp._content_consumed=True
+                if size>=MAX_BODY_BYTES:resp.close()
             return resp
         raise TargetError("Redirect limit exceeded.")
     def get(self,url,**kwargs): return self.request("GET",url,**kwargs)
     def head(self,url,**kwargs): return self.request("HEAD",url,stream=False,**kwargs)
+    def close(self):self.session.close()
